@@ -43,7 +43,11 @@ ansible-playbook -i inventory/local.yml playbooks/site.yml -e local_user=$USER
 ## Structure
 
 ```
-inventory/       # Host definitions (local, remote-dev, remote-prod)
-group_vars/      # Environment-specific variables
+inventory/
+├── group_vars/  # Environment-specific variables
+├── local.yml    # Run on this host
+├── local-dev.yml
+├── remote-dev.yml
+└── remote-prod.yml
 roles/           # base, users, security, proxmox
 ```
