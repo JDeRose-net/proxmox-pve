@@ -1,0 +1,114 @@
+# Proxmox Setup - Ansible Configuration for Proxmox
+
+Ansible playbooks for configuring fresh Proxmox VE installations and installing PVE on Debian.
+
+## Quick Reference
+
+```bash
+# Post-install configuration (local)
+ansible-playbook -i inventory/local.yml playbooks/site.yml
+
+# Post-install configuration (remote)
+ansible-playbook -i inventory/remote-dev.yml playbooks/pve-setup.yml \
+  -e ansible_host=<IP>
+
+# Install PVE on Debian 13 Trixie
+ansible-playbook -i inventory/remote-dev.yml playbooks/pve-install.yml \
+  -e ansible_host=<IP> -e pve_hostname=<hostname>
+
+# User management only
+ansible-playbook -i inventory/local.yml playbooks/user.yml
+```
+
+## Project Structure
+
+```
+proxmox-setup/
+├── install.sh            # curl|bash entry point
+├── bootstrap.sh          # Pre-ansible system prep
+├── ansible.cfg           # Ansible configuration
+├── inventory/
+│   ├── local.yml         # Local execution (ansible_connection: local)
+│   ├── local-dev.yml     # Local with dev group settings
+│   ├── remote-dev.yml    # SSH to dev hosts (requires -e ansible_host=<IP>)
+│   ├── remote-prod.yml   # SSH to prod hosts
+│   └── group_vars/
+│       ├── all.yml       # Common vars (local_user: sysadm)
+│       ├── local.yml     # Permissive SSH, sudo_nopasswd: true
+│       ├── dev.yml       # Dev tools, sudo_nopasswd: true
+│       └── prod.yml      # Strict SSH, fail2ban, sudo_nopasswd: false
+├── playbooks/
+│   ├── site.yml          # Full setup (pve-setup + user)
+│   ├── pve-setup.yml     # Core PVE config
+│   ├── pve-install.yml   # Install PVE on Debian 13 Trixie
+│   └── user.yml          # User management only
+└── roles/
+    ├── base/             # System packages, timezone, locale
+    ├── users/            # Create local_user with sudo
+    ├── security/         # SSH hardening, fail2ban (prod)
+    ├── proxmox/          # PVE-specific config (repos, certs)
+    └── pve-install/      # Install PVE on Debian 13
+```
+
+## Installation Methods
+
+### curl|bash (fresh Proxmox)
+```bash
+curl -fsSL https://raw.githubusercontent.com/JDeRose-net/proxmox-setup/master/install.sh | NEWUSER=sysadm bash
+```
+
+### Manual
+```bash
+git clone https://github.com/JDeRose-net/proxmox-setup.git /opt/proxmox-setup
+cd /opt/proxmox-setup
+./bootstrap.sh
+ansible-playbook -i inventory/local.yml playbooks/site.yml
+```
+
+## Key Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `local_user` | sysadm | Non-root user to create |
+| `sudo_nopasswd` | varies | Passwordless sudo (true for local/dev) |
+| `ansible_host` | - | Required for remote inventories |
+| `pve_hostname` | - | Required for pve-install playbook |
+
+## Related Projects
+
+```
+/root/
+├── proxmox-setup/    # This project - Ansible configuration
+└── tofu/             # VM provisioning with OpenTofu
+    └── envs/pve-test/  # Test env for pve-install playbook
+```
+
+## Playbook Details
+
+### pve-install.yml
+Installs Proxmox VE on Debian 13 Trixie following the official wiki guide:
+1. Configures hostname and /etc/hosts
+2. Adds Proxmox repository (no-subscription)
+3. Installs Proxmox kernel and reboots
+4. Installs PVE packages (proxmox-ve, postfix, open-iscsi, chrony)
+5. Removes Debian kernel packages
+6. Cleans up temporary repo config
+
+**Requirements:**
+- Fresh Debian 13 (Trixie) installation
+- SSH access as root
+- Secure Boot disabled
+
+### pve-setup.yml
+Post-install configuration for existing PVE hosts:
+- Base system packages
+- SSH hardening (environment-specific)
+- Proxmox repo configuration
+
+### user.yml
+Creates non-privileged sudoer user (local_user variable).
+
+## GitHub Repository
+
+- Public: https://github.com/JDeRose-net/proxmox-setup
+- For curl|bash installation support
