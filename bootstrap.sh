@@ -5,7 +5,7 @@
 #
 set -euo pipefail
 
-DEFAULT_USER="homestak"
+DEFAULT_USER="sysadm"
 REPO_FILE="/etc/apt/sources.list.d/pve-no-subscription.list"
 
 usage() {
@@ -33,7 +33,7 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-echo "==> Proxmox Homestak Bootstrap"
+echo "==> Proxmox PVE Bootstrap"
 echo "==> Target user: $USERNAME"
 
 # Create local user if not exists
@@ -85,6 +85,6 @@ echo "==> Bootstrap complete!"
 echo ""
 echo "Next steps:"
 echo "  1. Log in as '$USERNAME'"
-echo "  2. Clone/copy the ansible playbooks to ~/$USERNAME"
-echo "  3. Run: ansible-playbook -i inventory/dev.yml playbooks/site.yml -e local_user=$USERNAME"
+echo "  2. cd /opt/proxmox-pve"
+echo "  3. Run: ansible-playbook -i inventory/local.yml playbooks/site.yml -e local_user=$USERNAME"
 echo ""

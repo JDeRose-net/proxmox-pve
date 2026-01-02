@@ -1,0 +1,12 @@
+---
+# Local environment (running on the target host)
+
+env_name: local
+
+# Permissive SSH - already on the box
+ssh_permit_root_login: "yes"
+ssh_password_authentication: "yes"
+
+# Local dev packages
+extra_packages:
+  - net-tools
