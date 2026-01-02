@@ -36,22 +36,6 @@ fi
 echo "==> Proxmox PVE Post-Install Setup"
 echo "==> Target user: $USERNAME"
 
-# Create local user if not exists
-if id "$USERNAME" &>/dev/null; then
-    echo "==> User '$USERNAME' already exists, skipping"
-else
-    echo "==> Creating user '$USERNAME'"
-    useradd -m -s /bin/bash "$USERNAME"
-fi
-
-# Add user to sudo group
-if groups "$USERNAME" | grep -q '\bsudo\b'; then
-    echo "==> User '$USERNAME' already in sudo group"
-else
-    echo "==> Adding '$USERNAME' to sudo group"
-    usermod -aG sudo "$USERNAME"
-fi
-
 # Disable enterprise repos
 echo "==> Disabling enterprise repositories"
 for repo in /etc/apt/sources.list.d/{pve-enterprise.sources,ceph.sources}; do
@@ -83,6 +67,6 @@ echo "==> Bootstrap complete!"
 echo ""
 echo "Next steps (as root):"
 echo "  cd /opt/proxmox-pve"
-echo "  ansible-playbook -i inventory/local.yml playbooks/site.yml"
+echo "  ansible-playbook -i inventory/local.yml playbooks/site.yml -e local_user=$USERNAME"
 echo "  passwd $USERNAME"
 echo ""
