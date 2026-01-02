@@ -1,0 +1,36 @@
+---
+# Install Proxmox VE on Debian 13 Trixie
+#
+# Usage:
+#   ansible-playbook -i inventory/remote-dev.yml playbooks/pve-install.yml \
+#     -e ansible_host=<IP> -e pve_hostname=<hostname>
+#
+# Requirements:
+#   - Fresh Debian 13 (Trixie) installation
+#   - Static IP configured
+#   - SSH access as root
+#   - Secure Boot disabled
+
+- name: Install Proxmox VE on Debian Trixie
+  hosts: proxmox
+  gather_facts: true
+
+  pre_tasks:
+    - name: Verify required variables
+      ansible.builtin.assert:
+        that:
+          - ansible_host is defined
+          - pve_hostname is defined
+        fail_msg: "Required: -e ansible_host=<IP> -e pve_hostname=<hostname>"
+
+    - name: Display installation target
+      ansible.builtin.debug:
+        msg: "Installing Proxmox VE on {{ pve_hostname }} ({{ ansible_host }})"
+
+  roles:
+    - pve-install
+
+  post_tasks:
+    - name: Installation complete
+      ansible.builtin.debug:
+        msg: "Proxmox VE installed. Web UI: https://{{ ansible_host }}:8006"

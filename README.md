@@ -28,9 +28,10 @@ passwd sysadm
 
 | Playbook | Description |
 |----------|-------------|
-| `site.yml` | Full setup (imports pve-setup + user) |
+| `site.yml` | Full post-install setup (imports pve-setup + user) |
 | `pve-setup.yml` | Core PVE config (packages, SSH, subscription nag) |
 | `user.yml` | User management only (create user, sudo, SSH keys) |
+| `pve-install.yml` | Install PVE on Debian 13 Trixie |
 
 Run individually:
 
@@ -41,6 +42,21 @@ ansible-playbook -i inventory/local.yml playbooks/pve-setup.yml
 # Just user setup
 ansible-playbook -i inventory/local.yml playbooks/user.yml -e local_user=sysadm
 ```
+
+## Install PVE on Debian
+
+Install Proxmox VE on a fresh Debian 13 (Trixie) system:
+
+```bash
+ansible-playbook -i inventory/remote-dev.yml playbooks/pve-install.yml \
+  -e ansible_host=10.0.12.100 \
+  -e pve_hostname=pve-new
+```
+
+Requirements:
+- Fresh Debian 13 Trixie with SSH access
+- Static IP configured
+- Secure Boot disabled
 
 ## Inventory Options
 
@@ -63,18 +79,20 @@ ansible-playbook -i inventory/local.yml playbooks/user.yml -e local_user=sysadm
 
 ```
 playbooks/
-├── site.yml       # Full setup
-├── pve-setup.yml  # Core PVE config
-└── user.yml       # User management
+├── site.yml        # Full post-install setup
+├── pve-setup.yml   # Core PVE config
+├── pve-install.yml # Install PVE on Debian
+└── user.yml        # User management
 inventory/
-├── group_vars/    # Environment-specific variables
+├── group_vars/     # Environment-specific variables
 ├── local.yml
 ├── local-dev.yml
 ├── remote-dev.yml
 └── remote-prod.yml
 roles/
-├── base           # Packages, timezone
-├── users          # User creation, sudo, SSH keys
-├── security       # SSH hardening, fail2ban
-└── proxmox        # PVE-specific (subscription nag)
+├── base            # Packages, timezone
+├── users           # User creation, sudo, SSH keys
+├── security        # SSH hardening, fail2ban
+├── proxmox         # PVE-specific (subscription nag)
+└── pve-install     # Install PVE on Debian
 ```

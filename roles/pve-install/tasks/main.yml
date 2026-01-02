@@ -1,0 +1,110 @@
+---
+# Install Proxmox VE on Debian 13 Trixie
+# Reference: https://pve.proxmox.com/wiki/Install_Proxmox_VE_on_Debian_13_Trixie
+
+- name: Verify running on Debian Trixie
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version == "13" or ansible_distribution_release == "trixie"
+    fail_msg: "This playbook requires Debian 13 (Trixie)"
+
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: "{{ pve_hostname }}"
+
+- name: Configure /etc/hosts with static IP
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "^{{ pve_ip }}\\s+"
+    line: "{{ pve_ip }} {{ pve_hostname }}{% if pve_domain %}.{{ pve_domain }} {{ pve_hostname }}{% endif %}"
+    state: present
+
+- name: Verify hostname resolves to non-loopback IP
+  ansible.builtin.command: hostname --ip-address
+  register: hostname_ip
+  changed_when: false
+  failed_when: hostname_ip.stdout is search('127.0')
+
+- name: Download Proxmox GPG key
+  ansible.builtin.get_url:
+    url: "{{ pve_gpg_key_url }}"
+    dest: /usr/share/keyrings/proxmox-archive-keyring-trixie.gpg
+    checksum: "{{ pve_gpg_key_checksum }}"
+    mode: "0644"
+
+- name: Add Proxmox VE repository
+  ansible.builtin.template:
+    src: pve-install-repo.sources.j2
+    dest: /etc/apt/sources.list.d/pve-install-repo.sources
+    mode: "0644"
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Full system upgrade
+  ansible.builtin.apt:
+    upgrade: full
+    autoremove: true
+
+- name: Install Proxmox kernel
+  ansible.builtin.apt:
+    name: proxmox-default-kernel
+    state: present
+  notify: Reboot for new kernel
+
+- name: Flush handlers to reboot now
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for system to come back after reboot
+  ansible.builtin.wait_for_connection:
+    delay: 30
+    timeout: "{{ reboot_timeout }}"
+
+- name: Preseed postfix configuration
+  ansible.builtin.debconf:
+    name: postfix
+    question: postfix/main_mailer_type
+    value: "Local only"
+    vtype: select
+
+- name: Install Proxmox VE packages
+  ansible.builtin.apt:
+    name: "{{ pve_packages }}"
+    state: present
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Remove Debian kernel packages
+  ansible.builtin.apt:
+    name: "{{ debian_kernel_packages }}"
+    state: absent
+    purge: true
+  ignore_errors: true
+
+- name: Remove os-prober
+  ansible.builtin.apt:
+    name: os-prober
+    state: absent
+    purge: true
+
+- name: Update grub
+  ansible.builtin.command: update-grub
+  changed_when: true
+
+- name: Remove temporary PVE install repository
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/pve-install-repo.sources
+    state: absent
+
+- name: Display completion message
+  ansible.builtin.debug:
+    msg: |
+      Proxmox VE installation complete!
+      Access web interface at: https://{{ pve_ip }}:8006
+
+      Next steps:
+      1. Create Linux Bridge vmbr0 for VM networking
+      2. Configure storage as needed
+      3. Run pve-setup.yml for post-install configuration
