@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Proxmox PVE Homestak Installer
+# Proxmox PVE Installer
 #
 # Usage:
 #   curl -sSL https://raw.githubusercontent.com/john-derose/proxmox-pve/master/install.sh | bash
@@ -12,7 +12,7 @@ set -euo pipefail
 
 REPO_URL="https://github.com/john-derose/proxmox-pve.git"
 INSTALL_DIR="/opt/proxmox-pve"
-USERNAME="${NEWUSER:-sysadm}"
+NEWUSER="${NEWUSER:-sysadm}"
 
 # Must run as root
 if [[ $EUID -ne 0 ]]; then
@@ -22,7 +22,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 echo "==> Proxmox PVE Installer"
-echo "==> Target user: $USERNAME"
+echo "==> Target user: $NEWUSER"
 
 # Install git if not present
 if ! command -v git &>/dev/null; then
@@ -49,4 +49,4 @@ chmod +x "$INSTALL_DIR/bootstrap.sh"
 
 echo ""
 echo "==> Running bootstrap..."
-"$INSTALL_DIR/bootstrap.sh" -u "$USERNAME"
+"$INSTALL_DIR/bootstrap.sh" -u "$NEWUSER"
